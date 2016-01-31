@@ -1,0 +1,250 @@
+{
+  "server": "185.19.30.10:5556",
+  "server_type": "ws",
+  "workspaces": [
+    {
+      "name": "Health - 185.19.30.11",
+      "view": {
+        "type": "Balloon",
+        "weight": 1,
+        "id": "e75428c8873ba25e8d61ca2e9e67ead6b8739dd3",
+        "version": 51,
+        "child": {
+          "type": "VStack",
+          "weight": 1,
+          "id": "fb909ab87f3a3be73956c792d7bebdca0d0c4669",
+          "version": 51,
+          "children": [
+            {
+              "type": "HStack",
+              "weight": 1,
+              "id": "1e2dd3940959d463326a0cb8390fa04e53d0ec30",
+              "version": 30,
+              "children": [
+                {
+                  "type": "VStack",
+                  "weight": 1,
+                  "id": "780c14c4f3c34ddf6b12c1e905431796bf8f6fb0",
+                  "version": 11,
+                  "children": [
+                    {
+                      "type": "Grid",
+                      "weight": 1,
+                      "id": "34c6bd3832803793e5e1ec90238d4891160af337",
+                      "version": 8,
+                      "title": "CPU",
+                      "query": "service ~= \"cpu-average/cpu-(user|nice|system|idle|steal|used)\" and not tagged \"summary\"",
+                      "max": "",
+                      "rows": "service",
+                      "cols": "host",
+                      "row_sort": "lexical",
+                      "col_sort": "lexical"
+                    },
+                    {
+                      "type": "Grid",
+                      "weight": 1,
+                      "id": "614f52d0b6de89b2307ff882c8ca0a61652d8161",
+                      "version": 3,
+                      "title": "Processes",
+                      "query": "service =~ \"processes/ps_state-%\"",
+                      "max": "",
+                      "rows": "service",
+                      "cols": "host",
+                      "row_sort": "lexical",
+                      "col_sort": "lexical"
+                    }
+                  ]
+                },
+                {
+                  "type": "VStack",
+                  "weight": 1,
+                  "id": "c06e13702b2bec0015153a4f10978c2d4b2353c1",
+                  "version": 4,
+                  "children": [
+                    {
+                      "type": "Grid",
+                      "weight": 1,
+                      "id": "a3875c0e331a8598c424763f1f4e2eee533b0481",
+                      "version": 3,
+                      "title": "Load",
+                      "query": "service =~ \"load/load/%\" and not tagged \"summary\"",
+                      "max": "",
+                      "rows": "service",
+                      "cols": "host",
+                      "row_sort": "lexical",
+                      "col_sort": "lexical"
+                    },
+                    {
+                      "type": "Grid",
+                      "weight": 1,
+                      "id": "8a7a7412d9c05437f69543723ca14c89357dbf91",
+                      "version": 2,
+                      "title": "Swap",
+                      "query": "service =~ \"swap/%\"",
+                      "max": "",
+                      "rows": "service",
+                      "cols": "host",
+                      "row_sort": "lexical",
+                      "col_sort": "lexical"
+                    }
+                  ]
+                },
+                {
+                  "type": "VStack",
+                  "weight": 1,
+                  "id": "b835659a75bf27d2eeb9464d4026c9d5406fd28f",
+                  "version": 14,
+                  "children": [
+                    {
+                      "type": "Grid",
+                      "weight": 1,
+                      "id": "cdcf93cced9e82533832dc9f9b9868c5965a56c3",
+                      "version": 6,
+                      "title": "Memory",
+                      "query": "service =~ \"memory/%\" and not tagged \"summary\"",
+                      "max": "",
+                      "rows": "service",
+                      "cols": "host",
+                      "row_sort": "lexical",
+                      "col_sort": "lexical"
+                    },
+                    {
+                      "type": "Grid",
+                      "weight": 1,
+                      "id": "62f666ee840503b51a368f5ee91ce542df7b34d2",
+                      "version": 8,
+                      "title": "Disk",
+                      "query": "service =~ \"df-%/percent_bytes-free\" and not (service =~ \"df-boot/%\" or service =~ \"%docker%\" or service =~ \"df-var-log%\")",
+                      "max": "100",
+                      "rows": "host",
+                      "cols": "service",
+                      "row_sort": "lexical",
+                      "col_sort": "lexical"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "HStack",
+              "weight": 1,
+              "id": "ed454080589593d9054f8a923cd6ec384b521f70",
+              "version": 21,
+              "children": [
+                {
+                  "type": "VStack",
+                  "weight": 1,
+                  "id": "606aa9ab8a10fe546627ad96be3fe016eac4840c",
+                  "version": 8,
+                  "children": [
+                    {
+                      "type": "Grid",
+                      "weight": 1,
+                      "id": "36d456a789a2cf6e33ecdb24e99eed8aee536374",
+                      "version": 6,
+                      "title": "sshd",
+                      "query": "service =~ \"tail-auth/counter-sshd-%\"",
+                      "max": "",
+                      "rows": "service",
+                      "cols": "host",
+                      "row_sort": "lexical",
+                      "col_sort": "lexical"
+                    },
+                    {
+                      "type": "HStack",
+                      "weight": 1,
+                      "id": "3001a3e99c56e7775c4bf280dbae81ff73e9aef0",
+                      "version": 4,
+                      "children": [
+                        {
+                          "type": "Title",
+                          "weight": 1,
+                          "id": "aa6237efd3d9db90f4fb2e21c2b43721597e7b7c",
+                          "version": 1,
+                          "title": "Totals"
+                        },
+                        {
+                          "type": "Gauge",
+                          "weight": 1,
+                          "id": "ff218bda5c9c7f09e4675cd1ac7741fe835d0f0b",
+                          "version": 1,
+                          "title": "Online hosts",
+                          "query": "service = \"distinct hosts\""
+                        },
+                        {
+                          "type": "Gauge",
+                          "weight": 1,
+                          "id": "42a463d1f00c633ff34d92dcac7d20e6af3481a0",
+                          "version": 2,
+                          "title": "Clock skew",
+                          "query": "service = \"clock skew\""
+                        }
+                      ]
+                    },
+                    {
+                      "type": "HStack",
+                      "weight": 1,
+                      "id": "b21e3022446ef4e68671508f317aacadcceb2c20",
+                      "version": 3,
+                      "children": [
+                        {
+                          "type": "Gauge",
+                          "weight": 1,
+                          "id": "27afd1799b97df522f066549fe64efdd359ce796",
+                          "version": 1,
+                          "title": "Load",
+                          "query": "tagged \"summary\" and service = \"load/load/shortterm\""
+                        },
+                        {
+                          "type": "Gauge",
+                          "weight": 1,
+                          "id": "ce79166747fbf6975786bbb79963d4c388e4eb9f",
+                          "version": 1,
+                          "title": "Mem use (Gb)",
+                          "query": "tagged \"summary\" and service = \"memory/memory-used\""
+                        },
+                        {
+                          "type": "Gauge",
+                          "weight": 1,
+                          "id": "24c690619b53473fbe34086dd1efc40358c5b919",
+                          "version": 1,
+                          "title": "Net TPS (kbps)",
+                          "query": "service = \"total network traffic\""
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Flot",
+                  "weight": 1,
+                  "id": "cfd5b5f863d9e899731f9d3dcff22fbbe65b66f5",
+                  "version": 2,
+                  "title": "Load over time",
+                  "query": "service =~ \"load/load/midterm\" and not tagged \"summary\"",
+                  "max": null,
+                  "timeRange": 900,
+                  "graphType": "line",
+                  "stackMode": "false"
+                },
+                {
+                  "type": "Flot",
+                  "weight": 1,
+                  "id": "27d4db337a9518b2d510d607d9c9a0bcc1bb5f1b",
+                  "version": 6,
+                  "title": "Memory over time",
+                  "query": "service = \"memory/memory-used\"",
+                  "max": null,
+                  "timeRange": 900,
+                  "graphType": "line",
+                  "stackMode": "false"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "id": "2c8d2579104b0f92ea234eca99aa4302a5f13a28"
+    }
+  ]
+}
