@@ -1,0 +1,178 @@
+(logging/init {:console true})
+;; (logging/init {:file "/var/log/riemann/riemann.log"})
+
+; Listen on the local interface over TCP (5555), UDP (5555), and websockets
+; (5556)
+(let [host "0.0.0.0"]
+     (tcp-server {:host host})
+     #_(udp-server {:host host})
+     (ws-server  {:host host}))
+
+;; (def to-graphite (graphite {:host "127.0.0.1"}))
+
+; Scan indexes for expired events every N seconds.
+(periodically-expire 5)
+
+(defn prn-format
+      [sn host service metric]
+      (println (format "Stream %s. | %s | %s | %s" sn host service metric)))
+
+;;
+;; SlipStream autoscaling section.
+(require '[clojure.core.async :refer [go timeout thread chan sliding-buffer <! >! <!! alts!]])
+(require '[com.sixsq.slipstream.clj-client.run :as ss-r])
+
+;; Application elasticity constraints.
+;; TODO: Read from .edn
+(def node-name "webapp")
+(def service-tags ["httpclient"])
+(def service-metric-name "avg_response_time")
+(def service-metric-re (re-pattern (str "^" service-metric-name)))
+(def scale-up-by 1)
+(def scale-down-by 1)
+(def metric-thold-up 7.0)
+(def metric-thold-down 6.0)
+(def vms-min 1)
+(def vms-max 5) ; "price" constraint
+
+;; Scaler logic.
+(def busy? (atom false))
+(defn busy! [] (swap! busy? (constantly true)))
+(defn free! [] (swap! busy? (constantly false)))
+
+(defn ms-to-sec
+  [ms]
+  (/ (float ms) 1000))
+(defn sec-to-ms
+  [sec]
+  (* 1000 sec))
+(def number-of-scalers 1)
+(def scale-chan (chan (sliding-buffer 1)))
+(def timeout-scale                600)
+(def timeout-scale-scaler-release 10000)
+;(def timeout-scale-scaler-release (sec-to-ms (+ timeout-scale 2)))
+(def timeout-processing-loop (sec-to-ms 600))
+
+(def not-nil? (complement nil?))
+
+(defn sleep
+  [sec]
+  (Thread/sleep (sec-to-ms sec)))
+
+(defn str-action
+  [action node-name n]
+  (let [act (cond
+              (= action :down) "-"
+              (= action :up)   "+"
+              :else            "?")]
+    (format "%s %s%s" node-name act n)))
+(defn log-scaler-timout
+  [action node-name n elapsed]
+  (warn "Timed out waiting scaler to return:" (str-action action node-name n) ". Elapsed:" elapsed))
+(defn log-scaling-failure
+  [action node-name n elapsed scale-res]
+  (error "Scaling failed: " (str-action action node-name n) ". Result:" scale-res ". Elapsed:" elapsed))
+(defn log-scaling-success
+  [action node-name n elapsed scale-res]
+  (info "Scaling success:" (str-action action node-name n) ". Result:" scale-res ". Elapsed:" elapsed))
+(defn log-exception-scaling
+  [action node-name n e]
+  (error "Exception when scaling:" (str-action action node-name n)". " (.getMessage e)))
+(defn log-will-execute-scale
+      [action node-name n]
+      (info "Will execute scale request:" (str-action action node-name n)))
+(defn log-place-scale-request
+  [action node-name n]
+  (info "Placing scale request:" (str-action action node-name n)))
+(defn log-scaler-busy
+  [action node-name n]
+  (warn "Scaler busy. Rejected scale request:" (str-action action node-name n)))
+(defn log-skip-scale-request
+  []
+  (warn "Scale request is not attempted."
+        "Run is not in scalable state."
+        "Request is not taken from the queue."))
+
+(defn scale-failure?
+  [scale-res]
+  (not= (:state scale-res) ss-r/action-success))
+
+(defn can-scale?
+  []
+  #_(ss-r/can-scale?)
+  (rand-nth '(true #_false)))
+
+(defn scale-action
+  [chan action node-name n timeout]
+  (cond
+      (= :up action)   (go (>! chan (ss-r/action-scale-up node-name n :timeout-s timeout)))
+      (= :down action) (go (>! chan (ss-r/action-scale-down-by node-name n :timeout-s timeout)))))
+
+(defn scale!
+  [action node-name n]
+  (let [ch (chan 1) start-ts (System/currentTimeMillis)]
+    (go
+      (let [[scale-res _] (alts! [ch (timeout timeout-scale-scaler-release)])
+            elapsed       (ms-to-sec (- (System/currentTimeMillis) start-ts))]
+        (free!)
+        (cond
+          (nil? scale-res)            (log-scaler-timout action node-name n elapsed)
+          (scale-failure? scale-res)  (log-scaling-failure action node-name n elapsed scale-res)
+          :else                       (log-scaling-success action node-name n elapsed scale-res))))
+    (scale-action ch action node-name n timeout-scale)))
+
+(defn scalers
+  [chan]
+  (let [msg (str "Starting " number-of-scalers " scale request processor(s).")]
+    (info msg)
+    (warn msg)
+    (error msg))
+  (doseq [_ (range number-of-scalers)]
+    (go
+      (while true
+        (if (can-scale?)
+          (let [[[action node-name n] _] (alts! [chan (timeout timeout-processing-loop)])]
+            (when (not-nil? action)
+              (try
+                (log-will-execute-scale action node-name n)
+                (scale! action node-name n)
+                (catch Exception e (log-exception-scaling action node-name n e)))))
+          (log-skip-scale-request))
+        (info "Sleeping in scale request processor loop for 5 sec.")
+        (sleep 5)))))
+
+(defonce ^:dynamic *scalers-executor* (scalers scale-chan))
+
+(defn put-scale-request
+  [action node-name n & _]
+  (cond
+    (= false @busy?) (do
+                       (log-place-scale-request action node-name n)
+                       (go (>! scale-chan [action node-name n]))
+                       (busy!))
+    (= true @busy?) (log-scaler-busy action node-name n)))
+
+;; Scaling streams.
+(let [index (default :ttl 20 (index))]
+  (streams
+
+    index
+
+    ;; if metric is above the threashold for more than S sec. dt
+    ;; consider taking into account the speed or acceleration.
+    (where (and (tagged service-tags)
+                (service service-metric-re)
+                (>= metric metric-thold-up))
+           #(put-scale-request :up node-name scale-up-by %))
+
+    (where (and (tagged service-tags)
+                (service service-metric-re)
+                (< metric metric-thold-down))
+           #(put-scale-request :down node-name scale-down-by %))
+
+    ;; send to graphite #VMs of the monitored node class.
+    ;; index the new event/metric : <node-name>_vms
+    ; (to-graphite ... (ss-r/get-multiplicity node-name))
+
+    (expired
+      #(info "expired" %))))
