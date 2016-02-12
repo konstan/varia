@@ -49,8 +49,7 @@
 (def number-of-scalers 1)
 (def scale-chan (chan (sliding-buffer 1)))
 (def timeout-scale                600)
-(def timeout-scale-scaler-release 10000)
-;(def timeout-scale-scaler-release (sec-to-ms (+ timeout-scale 2)))
+(def timeout-scale-scaler-release (sec-to-ms (+ timeout-scale 2)))
 (def timeout-processing-loop (sec-to-ms 600))
 
 (def not-nil? (complement nil?))
@@ -99,8 +98,7 @@
 
 (defn can-scale?
   []
-  #_(ss-r/can-scale?)
-  (rand-nth '(true #_false)))
+  (ss-r/can-scale?))
 
 (defn scale-action
   [chan action node-name n timeout]
@@ -162,12 +160,14 @@
     ;; consider taking into account the speed or acceleration.
     (where (and (tagged service-tags)
                 (service service-metric-re)
-                (>= metric metric-thold-up))
+                (>= metric metric-thold-up)
+                (< (sr-r/get-multiplicity) vms-max))
            #(put-scale-request :up node-name scale-up-by %))
 
     (where (and (tagged service-tags)
                 (service service-metric-re)
-                (< metric metric-thold-down))
+                (< metric metric-thold-down)
+                (> (sr-r/get-multiplicity) vms-min))
            #(put-scale-request :down node-name scale-down-by %))
 
     ;; send to graphite #VMs of the monitored node class.
