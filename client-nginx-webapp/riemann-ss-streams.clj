@@ -161,13 +161,13 @@
     (where (and (tagged service-tags)
                 (service service-metric-re)
                 (>= metric metric-thold-up)
-                (< (sr-r/get-multiplicity) vms-max))
+                (< (ss-r/get-multiplicity) vms-max))
            #(put-scale-request :up node-name scale-up-by %))
 
     (where (and (tagged service-tags)
                 (service service-metric-re)
                 (< metric metric-thold-down)
-                (> (sr-r/get-multiplicity) vms-min))
+                (> (ss-r/get-multiplicity) vms-min))
            #(put-scale-request :down node-name scale-down-by %))
 
     ;; send to graphite #VMs of the monitored node class.
