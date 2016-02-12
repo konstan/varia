@@ -24,16 +24,17 @@
 
 ;; Application elasticity constraints.
 ;; TODO: Read from .edn
-(def node-name "webapp")
+(def node-name "testvm")
 (def service-tags ["httpclient"])
 (def service-metric-name "avg_response_time")
-(def service-metric-re (re-pattern (str "^" service-metric-name)))
 (def scale-up-by 1)
 (def scale-down-by 1)
-(def metric-thold-up 7.0)
-(def metric-thold-down 6.0)
+(def metric-thold-up 10.0)
+(def metric-thold-down 5.0)
 (def vms-min 1)
-(def vms-max 5) ; "price" constraint
+(def vms-max 3) ; "price" constraint
+
+(def service-metric-re (re-pattern (str "^" service-metric-name)))
 
 ;; Scaler logic.
 (def busy? (atom false))
@@ -161,13 +162,13 @@
     (where (and (tagged service-tags)
                 (service service-metric-re)
                 (>= metric metric-thold-up)
-                (< (ss-r/get-multiplicity) vms-max))
+                (< (ss-r/get-node-multiplicity node-name) vms-max))
            #(put-scale-request :up node-name scale-up-by %))
 
     (where (and (tagged service-tags)
                 (service service-metric-re)
                 (< metric metric-thold-down)
-                (> (ss-r/get-multiplicity) vms-min))
+                (> (ss-r/get-node-multiplicity node-name) vms-min))
            #(put-scale-request :down node-name scale-down-by %))
 
     ;; send to graphite #VMs of the monitored node class.
