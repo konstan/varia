@@ -4,9 +4,9 @@
 ; Listen on the local interface over TCP (5555), UDP (5555), and websockets
 ; (5556)
 (let [host "0.0.0.0"]
-     (tcp-server {:host host})
-     #_(udp-server {:host host})
-     (ws-server  {:host host}))
+  (tcp-server {:host host})
+  #_(udp-server {:host host})
+  (ws-server {:host host}))
 
 ;; (def to-graphite (graphite {:host "127.0.0.1"}))
 
@@ -14,17 +14,19 @@
 (periodically-expire 5)
 
 (defn prn-format
-      [sn host service metric]
-      (println (format "Stream %s. | %s | %s | %s" sn host service metric)))
+  [sn host service metric]
+  (println (format "Stream %s. | %s | %s | %s" sn host service metric)))
 
 ;;
 ;; SlipStream autoscaling section.
-(require '[clojure.core.async :refer [go timeout thread chan sliding-buffer <! >! <!! alts!]])
+; Using core.async due to synchrnonous model of event processing in Riemann.
+; http://riemann.io/howto.html#client-backpressure-latency-and-queues
+(require '[clojure.core.async :refer [go timeout chan sliding-buffer <! >! alts!]])
 (require '[com.sixsq.slipstream.clj-client.run :as ss-r])
 
 ;; Application elasticity constraints.
 ;; TODO: Read from .edn
-(def node-name "testvm")
+(def comp-name "testvm")
 (def service-tags ["httpclient"])
 (def service-metric-name "avg_response_time")
 (def scale-up-by 1)
@@ -32,7 +34,7 @@
 (def metric-thold-up 10.0)
 (def metric-thold-down 5.0)
 (def vms-min 1)
-(def vms-max 3) ; "price" constraint
+(def vms-max 3)                                             ; "price" constraint
 
 (def service-metric-re (re-pattern (str "^" service-metric-name)))
 
@@ -49,7 +51,7 @@
   (* 1000 sec))
 (def number-of-scalers 1)
 (def scale-chan (chan (sliding-buffer 1)))
-(def timeout-scale                600)
+(def timeout-scale 600)
 (def timeout-scale-scaler-release (sec-to-ms (+ timeout-scale 2)))
 (def timeout-processing-loop (sec-to-ms 600))
 
@@ -60,33 +62,33 @@
   (Thread/sleep (sec-to-ms sec)))
 
 (defn str-action
-  [action node-name n]
+  [action comp-name n]
   (let [act (cond
               (= action :down) "-"
-              (= action :up)   "+"
-              :else            "?")]
-    (format "%s %s%s" node-name act n)))
+              (= action :up) "+"
+              :else "?")]
+    (format "%s %s%s" comp-name act n)))
 (defn log-scaler-timout
-  [action node-name n elapsed]
-  (warn "Timed out waiting scaler to return:" (str-action action node-name n) ". Elapsed:" elapsed))
+  [action comp-name n elapsed]
+  (warn "Timed out waiting scaler to return:" (str-action action comp-name n) ". Elapsed:" elapsed))
 (defn log-scaling-failure
-  [action node-name n elapsed scale-res]
-  (error "Scaling failed: " (str-action action node-name n) ". Result:" scale-res ". Elapsed:" elapsed))
+  [action comp-name n elapsed scale-res]
+  (error "Scaling failed: " (str-action action comp-name n) ". Result:" scale-res ". Elapsed:" elapsed))
 (defn log-scaling-success
-  [action node-name n elapsed scale-res]
-  (info "Scaling success:" (str-action action node-name n) ". Result:" scale-res ". Elapsed:" elapsed))
+  [action comp-name n elapsed scale-res]
+  (info "Scaling success:" (str-action action comp-name n) ". Result:" scale-res ". Elapsed:" elapsed))
 (defn log-exception-scaling
-  [action node-name n e]
-  (error "Exception when scaling:" (str-action action node-name n)". " (.getMessage e)))
+  [action comp-name n e]
+  (error "Exception when scaling:" (str-action action comp-name n) ". " (.getMessage e)))
 (defn log-will-execute-scale
-      [action node-name n]
-      (info "Will execute scale request:" (str-action action node-name n)))
+  [action comp-name n]
+  (info "Will execute scale request:" (str-action action comp-name n)))
 (defn log-place-scale-request
-  [action node-name n]
-  (info "Placing scale request:" (str-action action node-name n)))
+  [action comp-name n]
+  (info "Placing scale request:" (str-action action comp-name n)))
 (defn log-scaler-busy
-  [action node-name n]
-  (warn "Scaler busy. Rejected scale request:" (str-action action node-name n)))
+  [action comp-name n]
+  (warn "Scaler busy. Rejected scale request:" (str-action action comp-name n)))
 (defn log-skip-scale-request
   []
   (warn "Scale request is not attempted."
@@ -102,23 +104,23 @@
   (ss-r/can-scale?))
 
 (defn scale-action
-  [chan action node-name n timeout]
+  [chan action comp-name n timeout]
   (cond
-      (= :up action)   (go (>! chan (ss-r/action-scale-up node-name n :timeout-s timeout)))
-      (= :down action) (go (>! chan (ss-r/action-scale-down-by node-name n :timeout-s timeout)))))
+    (= :up action) (go (>! chan (ss-r/action-scale-up comp-name n :timeout timeout)))
+    (= :down action) (go (>! chan (ss-r/action-scale-down-by comp-name n :timeout timeout)))))
 
 (defn scale!
-  [action node-name n]
+  [action comp-name n]
   (let [ch (chan 1) start-ts (System/currentTimeMillis)]
     (go
       (let [[scale-res _] (alts! [ch (timeout timeout-scale-scaler-release)])
-            elapsed       (ms-to-sec (- (System/currentTimeMillis) start-ts))]
+            elapsed (ms-to-sec (- (System/currentTimeMillis) start-ts))]
         (free!)
         (cond
-          (nil? scale-res)            (log-scaler-timout action node-name n elapsed)
-          (scale-failure? scale-res)  (log-scaling-failure action node-name n elapsed scale-res)
-          :else                       (log-scaling-success action node-name n elapsed scale-res))))
-    (scale-action ch action node-name n timeout-scale)))
+          (nil? scale-res) (log-scaler-timout action comp-name n elapsed)
+          (scale-failure? scale-res) (log-scaling-failure action comp-name n elapsed scale-res)
+          :else (log-scaling-success action comp-name n elapsed scale-res))))
+    (scale-action ch action comp-name n timeout-scale)))
 
 (defn scalers
   [chan]
@@ -130,12 +132,12 @@
     (go
       (while true
         (if (can-scale?)
-          (let [[[action node-name n] _] (alts! [chan (timeout timeout-processing-loop)])]
+          (let [[[action comp-name n] _] (alts! [chan (timeout timeout-processing-loop)])]
             (when (not-nil? action)
               (try
-                (log-will-execute-scale action node-name n)
-                (scale! action node-name n)
-                (catch Exception e (log-exception-scaling action node-name n e)))))
+                (log-will-execute-scale action comp-name n)
+                (scale! action comp-name n)
+                (catch Exception e (log-exception-scaling action comp-name n e)))))
           (log-skip-scale-request))
         (info "Sleeping in scale request processor loop for 5 sec.")
         (sleep 5)))))
@@ -143,13 +145,13 @@
 (defonce ^:dynamic *scalers-executor* (scalers scale-chan))
 
 (defn put-scale-request
-  [action node-name n & _]
+  [action comp-name n & _]
   (cond
     (= false @busy?) (do
-                       (log-place-scale-request action node-name n)
-                       (go (>! scale-chan [action node-name n]))
+                       (log-place-scale-request action comp-name n)
+                       (go (>! scale-chan [action comp-name n]))
                        (busy!))
-    (= true @busy?) (log-scaler-busy action node-name n)))
+    (= true @busy?) (log-scaler-busy action comp-name n)))
 
 ;; Scaling streams.
 (let [index (default :ttl 20 (index))]
@@ -162,18 +164,18 @@
     (where (and (tagged service-tags)
                 (service service-metric-re)
                 (>= metric metric-thold-up)
-                (< (ss-r/get-node-multiplicity node-name) vms-max))
-           #(put-scale-request :up node-name scale-up-by %))
+                (< (ss-r/get-node-multiplicity comp-name) vms-max))
+           #(put-scale-request :up comp-name scale-up-by %))
 
     (where (and (tagged service-tags)
                 (service service-metric-re)
                 (< metric metric-thold-down)
-                (> (ss-r/get-node-multiplicity node-name) vms-min))
-           #(put-scale-request :down node-name scale-down-by %))
+                (> (ss-r/get-multiplicity comp-name) vms-min))
+           #(put-scale-request :down comp-name scale-down-by %))
 
     ;; send to graphite #VMs of the monitored node class.
-    ;; index the new event/metric : <node-name>_vms
-    ; (to-graphite ... (ss-r/get-multiplicity node-name))
+    ;; index the new event/metric : <comp-name>_vms
+    ; (to-graphite ... (ss-r/get-multiplicity comp-name))
 
     (expired
       #(info "expired" %))))
