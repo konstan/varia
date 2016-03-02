@@ -164,7 +164,7 @@
     (where (and (tagged service-tags)
                 (service service-metric-re)
                 (>= metric metric-thold-up)
-                (< (ss-r/get-node-multiplicity comp-name) vms-max))
+                (< (ss-r/get-multiplicity comp-name) vms-max))
            #(put-scale-request :up comp-name scale-up-by %))
 
     (where (and (tagged service-tags)
@@ -173,7 +173,7 @@
                 (> (ss-r/get-multiplicity comp-name) vms-min))
            #(put-scale-request :down comp-name scale-down-by %))
 
-    ;; send to graphite #VMs of the monitored node class.
+    ;; send to graphite #VMs of the monitored component class.
     ;; index the new event/metric : <comp-name>_vms
     ; (to-graphite ... (ss-r/get-multiplicity comp-name))
 
