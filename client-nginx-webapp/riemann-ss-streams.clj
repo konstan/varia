@@ -1,5 +1,8 @@
-(logging/init {:console true})
-;; (logging/init {:file "/var/log/riemann/riemann.log"})
+; -*- mode: clojure; -*-
+; vim: filetype=clojure
+
+;; (logging/init {:console true})
+(logging/init {:file "/var/log/riemann/riemann.log"})
 
 ; Listen on the local interface over TCP (5555), UDP (5555), and websockets
 ; (5556)
@@ -8,14 +11,10 @@
   #_(udp-server {:host host})
   (ws-server {:host host}))
 
-;; (def to-graphite (graphite {:host "127.0.0.1"}))
+(def to-graphite (graphite {:host "127.0.0.1"}))
 
 ; Scan indexes for expired events every N seconds.
-(periodically-expire 5)
-
-(defn prn-format
-  [sn host service metric]
-  (println (format "Stream %s. | %s | %s | %s" sn host service metric)))
+(periodically-expire 20)
 
 ;;
 ;; SlipStream autoscaling section.
@@ -31,12 +30,19 @@
 (def service-metric-name "avg_response_time")
 (def scale-up-by 1)
 (def scale-down-by 1)
-(def metric-thold-up 10.0)
-(def metric-thold-down 5.0)
+(def metric-thold-up 7000.0)
+(def metric-thold-down 2000.0)
 (def vms-min 1)
-(def vms-max 3)                                             ; "price" constraint
+(def vms-max 4)                                             ; "price" constraint
 
 (def service-metric-re (re-pattern (str "^" service-metric-name)))
+
+;; Send service metrics to graphite.
+(let [index (default :ttl 60 (index))]
+  (streams
+    (where (tagged service-tags)
+      to-graphite)))
+
 
 ;; Scaler logic.
 (def busy? (atom false))
