@@ -1,5 +1,5 @@
 {
-  "server": "185.19.30.10:5556",
+  "server": "riemann-host:5556",
   "server_type": "ws",
   "workspaces": [
     {
