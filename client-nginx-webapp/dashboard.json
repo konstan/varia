@@ -3,24 +3,24 @@
   "server_type": "ws",
   "workspaces": [
     {
-      "name": "Scale VMs - avg_response_time",
+      "name": "webapp avg_response_time and VMs",
       "view": {
         "type": "Balloon",
         "weight": 1,
         "id": "5a1032a348ea71a534abcef58c786c0e449c3d60",
-        "version": 6,
+        "version": 11,
         "child": {
           "type": "VStack",
           "weight": 1,
           "id": "3b342977ffcc3acc04eceeecc507d8ea0696f34b",
-          "version": 6,
+          "version": 11,
           "children": [
             {
               "type": "Flot",
               "weight": 1,
               "id": "798533e4b9bcdc2b972a58e34ab6539e55477209",
-              "version": 5,
-              "title": "avg_response_time",
+              "version": 9,
+              "title": "httpclient - avg_response_time",
               "query": "service =~ \"avg_response_time\" and tagged \"httpclient\"",
               "min": null,
               "max": null,
@@ -32,8 +32,8 @@
               "type": "Flot",
               "weight": 1,
               "id": "5fdbfac306e82aafbb4115ba2dbad7c456a60ba0",
-              "version": 1,
-              "title": "VMs",
+              "version": 2,
+              "title": "webapp - VMs",
               "query": "service =~ \"vms\"",
               "min": "0",
               "max": "10",
