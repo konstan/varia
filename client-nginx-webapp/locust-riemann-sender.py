@@ -63,10 +63,10 @@ def main():
     if nargs < 2:
         print "usage: riemann_ip[:port] [locust stats url]"
         raise SystemExit(1)
-    ip_port = sys.argv[0].split(':')
+    ip_port = sys.argv[1].split(':')
     ip = ip_port[0]
     port = len(ip_port) == 2 and ip_port[1] or riemann_port
-    locust = nargs >= 2 and sys.argv[1] or locust_stats_url
+    locust = nargs > 2 and sys.argv[2] or locust_stats_url
     publish_to_riemann(ip, port, locust)
 
 
