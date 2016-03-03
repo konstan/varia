@@ -31,7 +31,7 @@
 (def scale-up-by 1)
 (def scale-down-by 1)
 (def metric-thold-up 7000.0)
-(def metric-thold-down 2000.0)
+(def metric-thold-down 4000.0)
 (def vms-min 1)
 (def vms-max 4)                                             ; "price" constraint
 
