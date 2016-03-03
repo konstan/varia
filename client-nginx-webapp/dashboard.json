@@ -24,7 +24,7 @@
               "query": "service =~ \"avg_response_time\" and tagged \"httpclient\"",
               "min": null,
               "max": null,
-              "timeRange": 900,
+              "timeRange": 1800,
               "graphType": "line",
               "stackMode": "false"
             },
