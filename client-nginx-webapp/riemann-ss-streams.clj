@@ -159,6 +159,25 @@
                        (busy!))
     (= true @busy?) (log-scaler-busy action comp-name n)))
 
+(defn event-mult [mult]
+      (event {
+              :service (str comp-name "-mult")
+              :host (str comp-name ".mult")
+              :state (condp < mult
+                            vms-max       "critical"
+                            (- vms-max 2) "warning"
+                            "ok")
+              :description (str "Multiplicity of " comp-name " in SS run.")
+              :ttl 30
+              :metric mult}))
+
+;; Get multiplicity of the component instances, index it and send to graphite.
+(let [index (default :ttl 20 (index))]
+     (riemann.time/every! 10 (fn [] (let [mult (ss-r/get-multiplicity comp-name)
+                                          e (event-mult mult)]
+                                         (index e)
+                                         (to-graphite e)))))
+
 ;; Scaling streams.
 (let [index (default :ttl 20 (index))]
   (streams
@@ -178,10 +197,6 @@
                 (< metric metric-thold-down)
                 (> (ss-r/get-multiplicity comp-name) vms-min))
            #(put-scale-request :down comp-name scale-down-by %))
-
-    ;; send to graphite #VMs of the monitored component class.
-    ;; index the new event/metric : <comp-name>_vms
-    ; (to-graphite ... (ss-r/get-multiplicity comp-name))
 
     (expired
       #(info "expired" %))))
