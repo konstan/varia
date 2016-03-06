@@ -39,24 +39,24 @@
                   "weight": 1,
                   "id": "5fdbfac306e82aafbb4115ba2dbad7c456a60ba0",
                   "version": 28,
-                  "title": "Multiplicity: <comp-name>",
+                  "title": "<comp-name> - multiplicity",
                   "query": "service =~ \"<comp-name>-mult\"",
                   "min": null,
                   "max": null,
-                  "timeRange": 600,
+                  "timeRange": 1800,
                   "graphType": "line",
                   "stackMode": "true"
-                },
-                {
-                  "type": "Dial",
-                  "weight": 1,
-                  "id": "aa4e362d027a77fa9c6fbdb5a3263c813ed2a6b4",
-                  "version": 6,
-                  "title": "Multiplicity: <comp-name>",
-                  "query": "service = \"<comp-name>-mult\"",
-                  "max": "4"
                 }
               ]
+            },
+            {
+              "type": "Dial",
+              "weight": 1,
+              "id": "aa4e362d027a77fa9c6fbdb5a3263c813ed2a6b4",
+              "version": 7,
+              "title": "<comp-name> - multiplicity",
+              "query": "service = \"<comp-name>-mult\"",
+              "max": "4"
             }
           ]
         }
