@@ -15,6 +15,7 @@ th_max = 7000.0
 resource = '/load'
 m_name = 'avg_response_time'
 host_name = 'httpclient'
+tags = ['webapp']
 
 
 def m_to_state(m):
@@ -38,7 +39,7 @@ def publish(stats, client):
             event = {'host': host_name,
                      'service': m_name,
                      'metric_f': m,
-                     'tags': [host_name],
+                     'tags': tags,
                      'state': m_to_state(m),
                      'time': int(time.time()),
                      'ttl': 2 * sleep_t}

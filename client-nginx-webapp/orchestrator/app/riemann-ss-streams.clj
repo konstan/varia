@@ -26,7 +26,7 @@
 ;; Application elasticity constraints.
 ;; TODO: Read from .edn
 (def comp-name "webapp")
-(def service-tags ["httpclient"])
+(def service-tags [comp-name])
 (def service-metric-name "avg_response_time")
 (def scale-up-by 1)
 (def scale-down-by 1)
