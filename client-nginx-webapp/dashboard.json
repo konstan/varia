@@ -21,7 +21,7 @@
               "id": "798533e4b9bcdc2b972a58e34ab6539e55477209",
               "version": 9,
               "title": "<comp-name> - avg_response_time",
-              "query": "service =~ \"avg_response_time\" and tagged \"httpclient\"",
+              "query": "service =~ \"avg_response_time\" and tagged \"<comp-name>\"",
               "min": null,
               "max": null,
               "timeRange": 1800,
