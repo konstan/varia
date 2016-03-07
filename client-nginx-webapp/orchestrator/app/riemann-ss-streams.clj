@@ -1,14 +1,6 @@
 ; -*- mode: clojure; -*-
 ; vim: filetype=clojure
 
-(require '[clj-http.client :as client]
-         '[cheshire.core :as json]
-         '[riemann :refer :all]
-         '[riemann.config :refer :all]
-         '[riemann.streams :refer :all]
-         '[riemann.logging :refer :all]
-         '[riemann.query :as query])
-
 ;; (logging/init {:console true})
 (logging/init {:file "/var/log/riemann/riemann.log"})
 
@@ -187,6 +179,7 @@
                                    (to-graphite e)))))
 
 ;; Scaling streams.
+(def mtw-sec 30)
 (let [index (default :ttl 20 (index))]
   (streams
 
@@ -194,10 +187,10 @@
 
     (where (and (tagged service-tags)
                 (service service-metric-re))
-           (moving-time-window 30
+           (moving-time-window mtw-sec
                                (fn [events]
                                  (let [mean (:metric (riemann.folds/mean events))]
-                                   (info "MEAN over 60 seconds:" mean)
+                                   (info "MEAN over sliding" mtw-sec "seconds:" mean)
                                    (cond
                                      ; TODO: look for the multiplicity in the index
                                      (and (>= mean metric-thold-up) (< (ss-r/get-multiplicity comp-name) vms-max))
