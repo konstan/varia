@@ -1,6 +1,14 @@
 ; -*- mode: clojure; -*-
 ; vim: filetype=clojure
 
+(require '[clj-http.client :as client]
+         '[cheshire.core :as json]
+         '[riemann :refer :all]
+         '[riemann.config :refer :all]
+         '[riemann.streams :refer :all]
+         '[riemann.logging :refer :all]
+         '[riemann.query :as query])
+
 ;; (logging/init {:console true})
 (logging/init {:file "/var/log/riemann/riemann.log"})
 
@@ -41,7 +49,7 @@
 (let [index (default :ttl 60 (index))]
   (streams
     (where (tagged service-tags)
-      to-graphite)))
+           to-graphite)))
 
 
 ;; Scaler logic.
@@ -160,23 +168,23 @@
     (= true @busy?) (log-scaler-busy action comp-name n)))
 
 (defn event-mult [mult]
-      (event {
-              :service (str comp-name "-mult")
-              :host (str comp-name ".mult")
-              :state (condp < mult
-                            vms-max       "critical"
-                            (- vms-max 2) "warning"
-                            "ok")
-              :description (str "Multiplicity of " comp-name " in SS run.")
-              :ttl 30
-              :metric mult}))
+  (event {
+          :service     (str comp-name "-mult")
+          :host        (str comp-name ".mult")
+          :state       (condp < mult
+                         vms-max "critical"
+                         (- vms-max 2) "warning"
+                         "ok")
+          :description (str "Multiplicity of " comp-name " in SS run.")
+          :ttl         30
+          :metric      mult}))
 
 ;; Get multiplicity of the component instances, index it and send to graphite.
 (let [index (default :ttl 20 (index))]
-     (riemann.time/every! 10 (fn [] (let [mult (ss-r/get-multiplicity comp-name)
-                                          e (event-mult mult)]
-                                         (index e)
-                                         (to-graphite e)))))
+  (riemann.time/every! 10 (fn [] (let [mult (ss-r/get-multiplicity comp-name)
+                                       e    (event-mult mult)]
+                                   (index e)
+                                   (to-graphite e)))))
 
 ;; Scaling streams.
 (let [index (default :ttl 20 (index))]
@@ -184,19 +192,32 @@
 
     index
 
+    (where (and (tagged service-tags)
+                (service service-metric-re))
+           (moving-time-window 60
+                               (fn [events]
+                                 (let [mean (:metric (riemann.folds/mean events))]
+                                   (info "MEAN over 60 seconds:" mean)
+                                   (cond
+                                     ; TODO: look for the multiplicity in the index
+                                     (and (>= mean metric-thold-up) (< (ss-r/get-multiplicity comp-name) vms-max))
+                                       (put-scale-request :up comp-name scale-up-by)
+                                     (and (< mean metric-thold-down) (> (ss-r/get-multiplicity comp-name) vms-min))
+                                       (put-scale-request :down comp-name scale-down-by))))))
+
     ;; if metric is above the threashold for more than S sec. dt
     ;; consider taking into account the speed or acceleration.
-    (where (and (tagged service-tags)
-                (service service-metric-re)
-                (>= metric metric-thold-up)
-                (< (ss-r/get-multiplicity comp-name) vms-max))
-           #(put-scale-request :up comp-name scale-up-by %))
+    ;(where (and (tagged service-tags)
+    ;            (service service-metric-re)
+    ;            (>= metric metric-thold-up)
+    ;            (< (ss-r/get-multiplicity comp-name) vms-max))
+    ;       #(put-scale-request :up comp-name scale-up-by %))
 
-    (where (and (tagged service-tags)
-                (service service-metric-re)
-                (< metric metric-thold-down)
-                (> (ss-r/get-multiplicity comp-name) vms-min))
-           #(put-scale-request :down comp-name scale-down-by %))
+    ;(where (and (tagged service-tags)
+    ;            (service service-metric-re)
+    ;            (< metric metric-thold-down)
+    ;            (> (ss-r/get-multiplicity comp-name) vms-min))
+    ;       #(put-scale-request :down comp-name scale-down-by %))
 
     (expired
       #(info "expired" %))))
