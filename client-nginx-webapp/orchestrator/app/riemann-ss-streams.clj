@@ -194,7 +194,7 @@
 
     (where (and (tagged service-tags)
                 (service service-metric-re))
-           (moving-time-window 60
+           (moving-time-window 30
                                (fn [events]
                                  (let [mean (:metric (riemann.folds/mean events))]
                                    (info "MEAN over 60 seconds:" mean)
