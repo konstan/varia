@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import struct
+import socket
 import sys
 import time
 import urllib, json
@@ -32,32 +34,65 @@ def get_stats(url):
     return json.loads(response.read())
 
 
+def connect(t):
+    while True:
+        try:
+            t.connect()
+            break
+        except socket.error as ex:
+            print "Failed to connect to %s:%s : %s" % (t.host, t.port, ex)
+        time.sleep(sleep_t)
+    return t
+
+
+def reconnect(t):
+    print "reconnecting..."
+    try:
+        t.disconnect()
+    except:
+        pass
+    connect(t)
+    print "reconnected."
+
+
+def event_from_stats(s):
+    m = s.get(m_name)
+    return {'host': host_name,
+            'service': m_name,
+            'metric_f': m,
+            'tags': tags,
+            'state': m_to_state(m),
+            'time': int(time.time()),
+            'ttl': 2 * sleep_t}
+
+
 def publish(stats, client):
     for s in stats['stats']:
         if resource == s.get('name', ''):
-            m = s.get(m_name)
-            event = {'host': host_name,
-                     'service': m_name,
-                     'metric_f': m,
-                     'tags': tags,
-                     'state': m_to_state(m),
-                     'time': int(time.time()),
-                     'ttl': 2 * sleep_t}
-            print event
-            client.event(**event)
+            event = event_from_stats(s)
+            try:
+                client.event(**event)
+                print "SENT:", event
+            except Exception as ex:
+                print "FAILED:", ex, event
+                raise ex
 
 
 def publish_to_riemann(ip, port=riemann_port, locust=locust_stats_url):
     t = TCPTransport(ip, port)
-    t.connect()
+    connect(t)
     try:
         with riemann_client.client.Client(t) as client:
             while True:
                 stats = get_stats(locust)
-                publish(stats, client)
-                time.sleep(sleep_t)
+                try:
+                    publish(stats, client)
+                    time.sleep(sleep_t)
+                except (socket.error, struct.error) as ex:
+                    reconnect(client.transport)
     finally:
         t.disconnect()
+
 
 def main():
     nargs = len(sys.argv)
