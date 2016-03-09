@@ -159,7 +159,8 @@
                        (busy!))
     (= true @busy?) (log-scaler-busy action comp-name n)))
 
-(defn event-mult [mult]
+(defn event-mult
+  [mult]
   (event {
           :service     (str comp-name "-mult")
           :host        (str comp-name ".mult")
@@ -180,7 +181,7 @@
 
 ;; Scaling streams.
 (def mtw-sec 30)
-(let [index (default :ttl 20 (index))]
+(let [index (default :ttl 60 (index))]
   (streams
 
     index
@@ -197,6 +198,12 @@
                                        (put-scale-request :up comp-name scale-up-by)
                                      (and (< mean metric-thold-down) (> (ss-r/get-multiplicity comp-name) vms-min))
                                        (put-scale-request :down comp-name scale-down-by))))))
+
+    (with {:service "load/load/shortterm" :node-name comp-name}
+          (coalesce
+            (smap folds/count
+                  (with {:host nil :service (str comp-name "-count")}
+                        index))))
 
     (expired
       #(info "expired" %))))
