@@ -20,3 +20,7 @@ deploy_ntpd() {
 disable_ipv6
 yum install -y epel-release vim bash-completion
 deploy_ntpd
+
+# deploy and start collectd with publication of metrics to riemann
+url=${source_root}/webapp/deployment/collectd.sh
+curl -sSfL $url | bash
