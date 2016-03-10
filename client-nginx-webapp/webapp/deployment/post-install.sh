@@ -17,6 +17,8 @@ deploy_ntpd() {
     systemctl start ntpd.service
 }
 
+setenforce Permissive
+
 disable_ipv6
 yum install -y epel-release vim bash-completion
 deploy_ntpd
