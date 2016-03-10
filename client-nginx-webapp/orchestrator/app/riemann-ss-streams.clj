@@ -199,11 +199,12 @@
                                      (and (< mean metric-thold-down) (> (ss-r/get-multiplicity comp-name) vms-min))
                                        (put-scale-request :down comp-name scale-down-by))))))
 
-    (with {:service "load/load/shortterm" :node-name comp-name}
-          (coalesce
-            (smap folds/count
-                  (with {:host nil :service (str comp-name "-count")}
-                        index))))
+    (where (and (= (:node-name event) comp-name)
+                (service "load/load/shortterm"))
+           (coalesce 5
+                     (smap folds/count
+                           (with {:host nil :service (str comp-name "-count")}
+                                 index))))
 
     (expired
       #(info "expired" %))))
