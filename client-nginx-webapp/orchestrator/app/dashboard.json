@@ -29,25 +29,30 @@
               "stackMode": "false"
             },
             {
-              "type": "HStack",
+              "type": "Flot",
               "weight": 1,
-              "id": "4384dfbe11dd174b0ddc63460c5624f3d4c7edb8",
-              "version": 9,
-              "children": [
-                {
-                  "type": "Flot",
-                  "weight": 1,
-                  "id": "5fdbfac306e82aafbb4115ba2dbad7c456a60ba0",
-                  "version": 28,
-                  "title": "<comp-name> - multiplicity",
-                  "query": "service =~ \"<comp-name>-mult\"",
-                  "min": null,
-                  "max": null,
-                  "timeRange": 1800,
-                  "graphType": "line",
-                  "stackMode": "true"
-                }
-              ]
+              "id": "5fdbfac306e82aafbb4115ba2dbad7c456a60ba0",
+              "version": 37,
+              "title": "<comp-name> - multiplicity",
+              "query": "service =~ \"<comp-name>-mult\"",
+              "min": null,
+              "max": null,
+              "timeRange": 1800,
+              "graphType": "line",
+              "stackMode": "true"
+            },
+            {
+              "type": "Flot",
+              "weight": 1,
+              "id": "f5a23f7f827dd39dff412e78c74c81101e699a60",
+              "version": 2,
+              "title": "<comp-name> - count",
+              "query": "service =~ \"<comp-name>-count\"",
+              "min": null,
+              "max": null,
+              "timeRange": 1800,
+              "graphType": "line",
+              "stackMode": "false"
             },
             {
               "type": "HStack",
@@ -60,16 +65,16 @@
                   "weight": 1,
                   "id": "aa4e362d027a77fa9c6fbdb5a3263c813ed2a6b4",
                   "version": 17,
-                  "title": "webapp - multiplicity",
-                  "query": "service = \"webapp-mult\"",
+                  "title": "<comp-name> - multiplicity",
+                  "query": "service = \"<comp-name>-mult\"",
                   "max": "4"
                 },
                 {
                   "type": "Grid",
                   "weight": 1,
                   "id": "33dba2433176699c6a2dca24d0ce077028fbbc42",
-                  "version": 14,
-                  "title": "load",
+                  "version": 15,
+                  "title": "<comp-name> - load",
                   "query": "service =~ \"load/load/%\"",
                   "max": "",
                   "rows": "service",
