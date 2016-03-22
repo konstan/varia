@@ -19,4 +19,6 @@ deploy_webapp() {
 deploy_webapp
 
 ss-set ready true
-ss-display "Webapp http://$hostname is ready!"
+url=http://$hostname
+ss-set url.service $url
+ss-display "Webapp $url is ready!"

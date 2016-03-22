@@ -172,4 +172,6 @@ deploy_nginx
 deploy_collectd
 
 hostname=`ss-get hostname`
-ss-display "Webapp via Nginx proxy: http://$hostname"
+url="http://$hostname"
+ss-set url.service $url
+ss-display "Webapp via Nginx proxy: $url"

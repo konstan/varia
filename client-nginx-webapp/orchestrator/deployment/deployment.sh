@@ -137,7 +137,8 @@ deploy_riemann_ubuntu
 start_riemann_dash
 
 service ufw stop
-ss-set url.service "${hostname}:${riemann_dashboard_port-5555}"
+# Publish Riemann dashboard endpoint.
+ss-set url.service "http://${hostname}:${riemann_dashboard_port}"
 
 ss-display "Riemann ready!"
 

@@ -43,4 +43,6 @@ run_httpclient
 deploy_and_run_riemann_client
 
 hostname=`ss-get hostname`
-ss-display "Load generator: http://$hostname:8089"
+url="http://${hostname}:8089"
+ss-set url.service $url
+ss-display "Load generator: $url"
