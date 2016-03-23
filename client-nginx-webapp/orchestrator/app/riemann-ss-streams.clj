@@ -11,7 +11,7 @@
 ; (5556)
 (let [host "0.0.0.0"]
   (tcp-server {:host host})
-  #_(udp-server {:host host})
+  (udp-server {:host host})
   (ws-server {:host host}))
 
 (def to-graphite (graphite {:host "127.0.0.1"}))
