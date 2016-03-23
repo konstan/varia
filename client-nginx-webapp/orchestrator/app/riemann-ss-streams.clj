@@ -1,6 +1,9 @@
 ; -*- mode: clojure; -*-
 ; vim: filetype=clojure
 
+
+(require 'riemann.common)
+
 ;; (logging/init {:console true})
 (logging/init {:file "/var/log/riemann/riemann.log"})
 
@@ -191,19 +194,20 @@
            (moving-time-window mtw-sec
                                (fn [events]
                                  (let [mean (:metric (riemann.folds/mean events))]
-                                   (info "MEAN over sliding" mtw-sec "seconds:" mean)
+                                   (info "Average over sliding" mtw-sec "sec window:" mean)
                                    (cond
                                      ; TODO: look for the multiplicity in the index
+                                     ; (riemann.index/lookup (:index @riemann.config/core) comp-name".mult" comp-name"-mult")
                                      (and (>= mean metric-thold-up) (< (ss-r/get-multiplicity comp-name) vms-max))
                                        (put-scale-request :up comp-name scale-up-by)
                                      (and (< mean metric-thold-down) (> (ss-r/get-multiplicity comp-name) vms-min))
                                        (put-scale-request :down comp-name scale-down-by))))))
 
     (where (and (= (:node-name event) comp-name)
-                (service "load/load/shortterm"))
+                (service (re-pattern "^load/load/shortterm")))
            (coalesce 5
                      (smap folds/count
-                           (with {:host nil :service (str comp-name "-count")}
+                           (with {:host nil :instance-id nil :service (str comp-name "-count")}
                                  index))))
 
     (expired

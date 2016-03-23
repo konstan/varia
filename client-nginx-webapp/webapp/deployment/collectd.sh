@@ -29,6 +29,8 @@ BaseDir     "/var/lib/collectd"
 PIDFile     "/var/run/collectd.pid"
 PluginDir   "/usr/lib64/collectd"
 
+Interval 10.0
+
 LoadPlugin logfile
 <Plugin logfile>
        LogLevel info
@@ -37,7 +39,9 @@ LoadPlugin logfile
        PrintSeverity true
 </Plugin>
 
-LoadPlugin load
+<LoadPlugin load>
+  Interval 10.0
+</LoadPlugin>
 
 Include "/etc/collectd.d"
 EOF
@@ -58,6 +62,7 @@ LoadPlugin write_riemann
         Host "$riemann_host"
         Port "$riemann_port"
         Protocol TCP
+        Batch false
         StoreRates true
         AlwaysAppendDS false
     </Node>
