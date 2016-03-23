@@ -52,7 +52,7 @@
               "max": null,
               "timeRange": 1800,
               "graphType": "line",
-              "stackMode": "false"
+              "stackMode": "true"
             },
             {
               "type": "HStack",
