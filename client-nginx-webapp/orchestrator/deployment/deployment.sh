@@ -76,7 +76,7 @@ deploy_riemann_ubuntu() {
                     /opt/slipstream/client/sbin/slipstream.context)
     mkdir -p /opt/slipstream/client/lib/
     clj_ss_client=/opt/slipstream/client/lib/clj-ss-client.jar
-    curl -sSfL -o $clj_ss_client $ss_endpoint/downloads/clj-ss-client.jar
+    curl -k -sSfL -o $clj_ss_client $ss_endpoint/downloads/clj-ss-client.jar
 
     cat > /etc/default/riemann <<EOF
 EXTRA_CLASSPATH=$clj_ss_client
